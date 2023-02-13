@@ -81,8 +81,8 @@ public:
 
 	CircularBuffer<float> circularbuffer;
 	float* channelData;
-	float* floatOutputArray = new float[N];
-	float* CurrentOutputArray = new float[N];
+	float* previousOutputArray = new float[N];
+	float* currentOutputArray = new float[N];
 	int Index = 0;
 
 	double input_sample_rate = 0.0;

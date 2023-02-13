@@ -42,11 +42,11 @@ public:
 	int current_input_channel_index = 0;
 	juce::StringArray last_input_channel_items;
 	juce::StringArray empty_input_channel_items;
-	juce::Rectangle<int> FFTArea;
+	juce::Rectangle<int> SpectrogramArea;
 
 	juce::Slider OutputRadio;
 	juce::Label l_OutputRadio;
-	float Radio;
+	float Ratio;
 	int targetFreqNum;
 	juce::Label l_windowfunction;
 	juce::ComboBox s_windowfunction;

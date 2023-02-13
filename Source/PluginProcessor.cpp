@@ -31,7 +31,7 @@ puannhiAudioProcessor::~puannhiAudioProcessor()
 	delete[] OutputArray;
 	delete[] PreviousArray;
 	delete[] scopeData;
-	delete[] floatOutputArray;
+	delete[] previousOutputArray;
 }
 
 //==============================================================================
@@ -111,10 +111,10 @@ void puannhiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
 	TargetFreqNum = sizeof(target_frequency) / sizeof(target_frequency[0]);
 	
 	//juce::zeromem(OutputArray, sizeof(std::complex<float>)*N);
-	juce::zeromem(floatOutputArray, sizeof(float)*N);
+	juce::zeromem(previousOutputArray, sizeof(float)*N);
 	for (int i = 0; i < N; i++)
 	{
-		floatOutputArray[i] = juce::Decibels::gainToDecibels(floatOutputArray[i] / (N / 1));
+		previousOutputArray[i] = juce::Decibels::gainToDecibels(previousOutputArray[i] / (N / 1));
 	}
 
 	for (int i = 0; i < scopeSize; i++)
@@ -220,8 +220,7 @@ void puannhiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 
 	if (!tag)
 	{
-		forwardFFT->perform(InputArray, tempInputArray, false);
-		//memcpy(tempInputArray, InputArray, sizeof(std::complex<float>)*N);
+		forwardFFT->perform(InputArray, OutputArray, false);
 		tag = true;
 	}
 
