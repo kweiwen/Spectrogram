@@ -87,13 +87,11 @@ void puannhiAudioProcessorEditor::resized()
 
 void puannhiAudioProcessorEditor::timerCallback()
 {
-	if (audioProcessor.tag = true)
+	if (audioProcessor.nextBlockReady = true)
 	{		
-		memcpy(audioProcessor.OutputArray, audioProcessor.tempInputArray, sizeof(std::complex<float>) * audioProcessor.N);
-
 		drawNextFrameOfSpectrum();
+		audioProcessor.nextBlockReady = false;
 		repaint();
-		audioProcessor.tag = false;
 	}
 }
 
@@ -173,7 +171,6 @@ void puannhiAudioProcessorEditor::drawFrame(juce::Graphics& g)
 		}
 		else
 		{
-
 			g.setColour(juce::Colours::greenyellow);
 			g.drawLine(SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
 				SpectrogramArea.getY() + juce::jmap(audioProcessor.scopeData[i], 0.0f, 1.0f, (float)height, 0.0f),
@@ -190,35 +187,22 @@ void puannhiAudioProcessorEditor::drawCoordiante(juce::Graphics & g)
 	auto width = SpectrogramArea.getWidth();
 	g.setFont(12.0f);
 	g.setColour(juce::Colours::blue);
-	//g.drawRoundedRectangle(area.toFloat(), 5, 2);
 	auto deltaX=(float)juce::jmap(1 * 10, 0, audioProcessor.scopeSize, 0, width);
 	
-
 	for (int i = 0; i < 10; ++i)
 	{
-
 		auto x = area.getX() + (float)juce::jmap(i, 0, 10,0, width);
-		g.setColour(juce::Colours::hotpink);
+		g.setColour(juce::Colours::whitesmoke);
 		g.drawFittedText(juce::String((audioProcessor.target_frequency[i] < 1000.0f) ? juce::String(audioProcessor.target_frequency[i]) + " Hz" : juce::String(audioProcessor.target_frequency[i] / 1000.0f) + " kHz"),
 			juce::roundToInt(x + deltaX/4), area.getBottom() + 8, 40, 15, juce::Justification::left, 1);
-
-		/*if (audioProcessor.drawFFT[i] > 6.0f)
-		{
-			g.setColour(juce::Colours::red);
-			g.drawFittedText(juce::String("error"),
-				juce::roundToInt(x + 5), area.getBottom() - 48, 40, 15, juce::Justification::left, 1);
-		}*/
-
 		if (i >= 1)
 		{
-			g.setColour(juce::Colours::purple);
+			g.setColour(juce::Colours::whitesmoke);
 			g.drawVerticalLine(juce::roundToInt(area.getX() + i / 10.0f * area.getWidth()), area.getY(), area.getBottom());
 		}
-		
-
 	}
 	
-	g.setColour(juce::Colours::hotpink);
+	g.setColour(juce::Colours::whitesmoke);
 	g.drawFittedText("  6 dB", area.getX() - 35, area.getY() + 2 - 5, 50, 14, juce::Justification::left, 1);
 	g.drawFittedText("  0 dB", area.getX() - 35, juce::roundToInt(area.getY() + 0.056 * area.getHeight()) - 5, 50, 14, juce::Justification::left, 1);
 	g.drawFittedText("-10 dB", area.getX() - 40, juce::roundToInt(area.getY() + 0.15 * area.getHeight()) - 5, 50, 14, juce::Justification::left, 1);
@@ -231,7 +215,7 @@ void puannhiAudioProcessorEditor::drawCoordiante(juce::Graphics & g)
 	g.drawFittedText("-90 dB", area.getX() - 40, juce::roundToInt(area.getY() + 0.90 * area.getHeight()) - 5, 50, 14, juce::Justification::left, 1);
 	g.drawFittedText("-100 dB", area.getX() - 40, juce::roundToInt(area.getY() + 1.0 * area.getHeight()) - 5, 50, 14, juce::Justification::left, 1);
 
-	g.setColour(juce::Colours::purple);
+	g.setColour(juce::Colours::whitesmoke);
 	g.drawHorizontalLine(juce::roundToInt(area.getY() + 0.00 * area.getHeight()), area.getX(), area.getRight());
 	g.drawHorizontalLine(juce::roundToInt(area.getY() + 0.056 * area.getHeight()), area.getX(), area.getRight());
 	g.drawHorizontalLine(juce::roundToInt(area.getY() + 0.15 * area.getHeight()), area.getX(), area.getRight());
@@ -243,7 +227,6 @@ void puannhiAudioProcessorEditor::drawCoordiante(juce::Graphics & g)
 	g.drawHorizontalLine(juce::roundToInt(area.getY() + 0.81 * area.getHeight()), area.getX(), area.getRight());
 	g.drawHorizontalLine(juce::roundToInt(area.getY() + 0.90 * area.getHeight()), area.getX(), area.getRight());
 	g.drawHorizontalLine(juce::roundToInt(area.getY() + 1.0 * area.getHeight()), area.getX(), area.getRight());
-	
 }
 
 
@@ -260,8 +243,6 @@ void puannhiAudioProcessorEditor::FindIndex(int numberLeft, int numberRight, int
 	{
 		StartIndex = NumberFrequecy - (numberLeft - 1) / 2;
 	}
-
-
 	if (numberRight % 2 == 0)
 	{
 		EndIndex = NumberFrequecy + numberRight / 2 - 1;
@@ -270,7 +251,6 @@ void puannhiAudioProcessorEditor::FindIndex(int numberLeft, int numberRight, int
 	{
 		EndIndex = NumberFrequecy + (numberRight - 1) / 2;
 	}
-
 	Index[0] = StartIndex;
 	Index[1] = EndIndex;
 }
@@ -296,7 +276,6 @@ void puannhiAudioProcessorEditor::BandDivide(int FreqNumber, int TargetFreNum, f
 			Index[0] = 0;
 			Index[1] = FreqNumArray[0] + (FreqNumInterval[0] - 1) / 2;
 		}
-
 	}
 	else if (FreqNumber == (TargetFreNum - 1))
 	{
@@ -310,9 +289,7 @@ void puannhiAudioProcessorEditor::BandDivide(int FreqNumber, int TargetFreNum, f
 			Index[0] = FreqNumArray[TargetFreNum - 1] - (FreqNumInterval[TargetFreNum - 2] - 1) / 2;
 			Index[1] = N / 2;
 		}
-
 	}
-
 }
 
 void puannhiAudioProcessorEditor::BandInternalDivide(int NumTargetFreNum, int DivideUnit, int StartIndex, int EndIndex, float* OutputArray, float* drawArray)
@@ -325,7 +302,6 @@ void puannhiAudioProcessorEditor::BandInternalDivide(int NumTargetFreNum, int Di
 	float* tempdrawdata = new float[DivideUnit];
 	for (int i = 0; i < DivideUnit; ++i)
 	{
-
 		tempdrawdata[i] = 0;
 
 		if (remainder != 0)
@@ -346,16 +322,9 @@ void puannhiAudioProcessorEditor::BandInternalDivide(int NumTargetFreNum, int Di
 			}
 			startIndex += quotient;
 			tempdrawdata[i] /= quotient;
-
 		}
-
-
-
 		drawArray[NumTargetFreNum*DivideUnit + i] = tempdrawdata[i];
-
 	}
-
-
 }
 
 void puannhiAudioProcessorEditor::DrawFFTSpectrumDivide(float* drawArray, float* TargetFrequency, int TargetFreNum, int N, int fs, float* OutputArray, int DivideUnit)
@@ -384,6 +353,4 @@ void puannhiAudioProcessorEditor::DrawFFTSpectrumDivide(float* drawArray, float*
 		EndIndex = Index[1];
 		BandInternalDivide(i, DivideUnit, StartIndex, EndIndex, OutputArray, drawArray);
 	}
-
-
 }

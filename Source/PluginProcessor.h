@@ -61,7 +61,7 @@ public:
 	void getStateInformation(juce::MemoryBlock& destData) override;
 	void setStateInformation(const void* data, int sizeInBytes) override;
 
-	int tag = false;
+	int nextBlockReady = false;
 
 	float target_frequency[10] = { 240,500,750,1000,1250,1500,1800,2200,3000,5000 };
 	const int DivideUnit = 10;
@@ -74,7 +74,6 @@ public:
 	const int N = 2048;
 	std::complex<float>* InputArray = new std::complex<float>[N];
 	std::complex<float>* OutputArray = new std::complex<float>[N];
-	std::complex<float>* tempInputArray = new std::complex<float>[N];
 	CircularBuffer<float> circularbuffer;
 	float* previousOutputArray = new float[N];
 	float* currentOutputArray = new float[N];

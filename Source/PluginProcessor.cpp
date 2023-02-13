@@ -30,8 +30,8 @@ puannhiAudioProcessor::~puannhiAudioProcessor()
 	delete[] InputArray;
 	delete[] OutputArray;
 	delete[] scopeData;
-	delete[] tempInputArray;
 	delete[] previousOutputArray;
+	delete[] currentOutputArray;
 }
 
 //==============================================================================
@@ -167,7 +167,8 @@ void puannhiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 
 	for (auto i = 0; i < buffer.getNumSamples(); ++i)
 	{
-		circularbuffer.writeBuffer(channelDataL[i] + channelDataR[i]);
+		auto data = (channelDataL[i] + channelDataR[i]) * 0.5;
+		circularbuffer.writeBuffer(data);
 	}
 
 	if (WindowTag == 1)
@@ -175,7 +176,6 @@ void puannhiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 		for (int i = 0; i < N; i++)
 		{
 			InputArray[i] = circularbuffer.readBuffer(N - i);
-
 		}
 	}
 	else if(WindowTag == 2)
@@ -217,10 +217,10 @@ void puannhiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 		}
 	}
 
-	if (!tag)
+	if (!nextBlockReady)
 	{
-		forwardFFT->perform(InputArray, tempInputArray, false);
-		tag = true;
+		forwardFFT->perform(InputArray, OutputArray, false);
+		nextBlockReady = true;
 	}
 
 }
