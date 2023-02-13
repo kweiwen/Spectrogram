@@ -64,24 +64,20 @@ public:
 	int tag = false;
 
 	float target_frequency[10] = { 240,500,750,1000,1250,1500,1800,2200,3000,5000 };
-	int DivideUnit = 10;
+	const int DivideUnit = 10;
 	float drawFFT[10*10];
-	int scopeSize = 100;  
-	
+	const int scopeSize = 100;  
 	float* scopeData = new float[scopeSize];
 	int TargetFreqNum;
+
 
 	const int N = 2048;
 	std::complex<float>* InputArray = new std::complex<float>[N];
 	std::complex<float>* OutputArray = new std::complex<float>[N];
 	std::complex<float>* frameProcessArray = new std::complex<float>[N];
-	int iteration = log2(N);
-
 	CircularBuffer<float> circularbuffer;
-	float* channelData;
 	float* previousOutputArray = new float[N];
 	float* currentOutputArray = new float[N];
-	int Index = 0;
 
 	double input_sample_rate = 0.0;
 	int WindowTag = 1;
