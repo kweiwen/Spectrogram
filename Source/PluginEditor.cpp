@@ -102,17 +102,19 @@ void puannhiAudioProcessorEditor::drawNextFrameOfSpectrum()
 	
 	for (int i = 0; i < audioProcessor.N; i++)
 	{
-		auto amplitude = std::abs(audioProcessor.OutputArray[i]) / audioProcessor.N;
+		auto amplitude = std::abs(audioProcessor.OutputArray[i]);
 		//auto angle = std::arg(audioProcessor.frameProcessArray[i]);
-		audioProcessor.currentOutputArray[i] = juce::Decibels::gainToDecibels(amplitude);
+		audioProcessor.currentOutputArray[i] = amplitude;
 		audioProcessor.previousOutputArray[i] = Ratio * audioProcessor.currentOutputArray[i] + (1- Ratio)*audioProcessor.previousOutputArray[i];
 	}
 
-	DrawFFTSpectrumDivide(audioProcessor.drawFFT, audioProcessor.target_frequency, audioProcessor.TargetFreqNum, audioProcessor.N, audioProcessor.input_sample_rate, audioProcessor.previousOutputArray, audioProcessor.DivideUnit);
+	//DrawFFTSpectrumDivide(audioProcessor.drawFFT, audioProcessor.target_frequency, audioProcessor.TargetFreqNum, audioProcessor.N, audioProcessor.input_sample_rate, audioProcessor.previousOutputArray, audioProcessor.DivideUnit);
 
-	for (int i = 0; i < 100; i++)
+	for (int i = 0; i < audioProcessor.scopeSize; ++i)
 	{
-		auto level = juce::jmap(audioProcessor.drawFFT[i], mindB, maxdB, 0.0f, 1.0f);
+		auto skewedProportionX = 1.0f - std::exp(std::log(1.0f - (float)i / (float)audioProcessor.scopeSize) * 0.2f);
+		auto fftDataIndex = juce::jlimit(0, audioProcessor.N / 2, (int)(skewedProportionX * (float)audioProcessor.N * 0.5f));
+		auto level = juce::jmap(juce::jlimit(mindB, maxdB, juce::Decibels::gainToDecibels(audioProcessor.previousOutputArray[fftDataIndex]) - juce::Decibels::gainToDecibels((float)audioProcessor.N)), mindB, maxdB, 0.0f, 1.0f);
 		audioProcessor.scopeData[i] = level;
 	}
 }
@@ -128,55 +130,62 @@ void puannhiAudioProcessorEditor::drawFrame(juce::Graphics& g)
 	float charwidth = 6;
 	float xwidth = charwidth / 2 + 1;
 
-	for (int i = 0; i < audioProcessor.scopeSize; ++i)
+	for (int i = 1; i < audioProcessor.scopeSize; ++i)
 	{
+		g.setColour(juce::Colours::antiquewhite);
+		g.drawLine({ 
+			(float)juce::jmap(i - 1, 0, audioProcessor.scopeSize - 1, 0, width),
+			juce::jmap(audioProcessor.scopeData[i - 1], 0.0f, 1.0f, (float)height, 0.0f),
+			(float)juce::jmap(i,     0, audioProcessor.scopeSize - 1, 0, width),
+			juce::jmap(audioProcessor.scopeData[i],     0.0f, 1.0f, (float)height, 0.0f) 
+			});
 
-		if (audioProcessor.scopeData[i] >= threthold1)
-		{
-			if (audioProcessor.scopeData[i] >= threthold2)
-			{
-				g.setColour(juce::Colours::red);
-				g.drawLine(SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
-					SpectrogramArea.getY() + juce::jmap(audioProcessor.scopeData[i], 0.0f, 1.0f, (float)height, 0.0f),
-					SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
-					SpectrogramArea.getY() + juce::jmap((audioProcessor.scopeData[i] - threthold2), 0.0f, 1.0f, (float)height, 0.0f), charwidth);
+		//if (audioProcessor.scopeData[i] >= threthold1)
+		//{
+		//	if (audioProcessor.scopeData[i] >= threthold2)
+		//	{
+		//		g.setColour(juce::Colours::red);
+		//		g.drawLine(SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
+		//			SpectrogramArea.getY() + juce::jmap(audioProcessor.scopeData[i], 0.0f, 1.0f, (float)height, 0.0f),
+		//			SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
+		//			SpectrogramArea.getY() + juce::jmap((audioProcessor.scopeData[i] - threthold2), 0.0f, 1.0f, (float)height, 0.0f), charwidth);
 
-				g.setColour(juce::Colours::yellow);
-				g.drawLine(SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
-					SpectrogramArea.getY() + juce::jmap(threthold1, 0.0f, 1.0f, (float)height, 0.0f),
-					SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
-					SpectrogramArea.getY() + juce::jmap(threthold2, 0.0f, 1.0f, (float)height, 0.0f), charwidth);
-				g.setColour(juce::Colours::greenyellow);
-				g.drawLine(SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
-					SpectrogramArea.getY() + juce::jmap(0.0f, 0.0f, 1.0f, (float)height, 0.0f),
-					SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
-					SpectrogramArea.getY() + juce::jmap(threthold1, 0.0f, 1.0f, (float)height, 0.0f), charwidth);
+		//		g.setColour(juce::Colours::yellow);
+		//		g.drawLine(SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
+		//			SpectrogramArea.getY() + juce::jmap(threthold1, 0.0f, 1.0f, (float)height, 0.0f),
+		//			SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
+		//			SpectrogramArea.getY() + juce::jmap(threthold2, 0.0f, 1.0f, (float)height, 0.0f), charwidth);
+		//		g.setColour(juce::Colours::greenyellow);
+		//		g.drawLine(SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
+		//			SpectrogramArea.getY() + juce::jmap(0.0f, 0.0f, 1.0f, (float)height, 0.0f),
+		//			SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
+		//			SpectrogramArea.getY() + juce::jmap(threthold1, 0.0f, 1.0f, (float)height, 0.0f), charwidth);
 
-			}
-			else
-			{
-				g.setColour(juce::Colours::yellow);
-				g.drawLine(SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
-					SpectrogramArea.getY() + juce::jmap(audioProcessor.scopeData[i], 0.0f, 1.0f, (float)height, 0.0f),
-					SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
-					SpectrogramArea.getY() + juce::jmap(audioProcessor.scopeData[i] - threthold1, 0.0f, 1.0f, (float)height, 0.0f), charwidth);
-				g.setColour(juce::Colours::greenyellow);
-				g.drawLine(SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
-					SpectrogramArea.getY() + juce::jmap(0.0f, 0.0f, 1.0f, (float)height, 0.0f),
-					SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
-					SpectrogramArea.getY() + juce::jmap(threthold1, 0.0f, 1.0f, (float)height, 0.0f), charwidth);
-			}
+		//	}
+		//	else
+		//	{
+		//		g.setColour(juce::Colours::yellow);
+		//		g.drawLine(SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
+		//			SpectrogramArea.getY() + juce::jmap(audioProcessor.scopeData[i], 0.0f, 1.0f, (float)height, 0.0f),
+		//			SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
+		//			SpectrogramArea.getY() + juce::jmap(audioProcessor.scopeData[i] - threthold1, 0.0f, 1.0f, (float)height, 0.0f), charwidth);
+		//		g.setColour(juce::Colours::greenyellow);
+		//		g.drawLine(SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
+		//			SpectrogramArea.getY() + juce::jmap(0.0f, 0.0f, 1.0f, (float)height, 0.0f),
+		//			SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
+		//			SpectrogramArea.getY() + juce::jmap(threthold1, 0.0f, 1.0f, (float)height, 0.0f), charwidth);
+		//	}
 
 
-		}
-		else
-		{
-			g.setColour(juce::Colours::greenyellow);
-			g.drawLine(SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
-				SpectrogramArea.getY() + juce::jmap(audioProcessor.scopeData[i], 0.0f, 1.0f, (float)height, 0.0f),
-				SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
-				SpectrogramArea.getY() + juce::jmap(0.0f, 0.0f, 1.0f, (float)height, 0.0f), charwidth);
-		}
+		//}
+		//else
+		//{
+		//	g.setColour(juce::Colours::greenyellow);
+		//	g.drawLine(SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
+		//		SpectrogramArea.getY() + juce::jmap(audioProcessor.scopeData[i], 0.0f, 1.0f, (float)height, 0.0f),
+		//		SpectrogramArea.getX() + xwidth + (float)juce::jmap(i, 0, audioProcessor.scopeSize, 1, width),
+		//		SpectrogramArea.getY() + juce::jmap(0.0f, 0.0f, 1.0f, (float)height, 0.0f), charwidth);
+		//}
 
 	}
 }
