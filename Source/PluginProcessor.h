@@ -74,7 +74,7 @@ public:
 	const int N = 2048;
 	std::complex<float>* InputArray = new std::complex<float>[N];
 	std::complex<float>* OutputArray = new std::complex<float>[N];
-	std::complex<float>* frameProcessArray = new std::complex<float>[N];
+	std::complex<float>* tempInputArray = new std::complex<float>[N];
 	CircularBuffer<float> circularbuffer;
 	float* previousOutputArray = new float[N];
 	float* currentOutputArray = new float[N];

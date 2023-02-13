@@ -30,7 +30,7 @@ puannhiAudioProcessor::~puannhiAudioProcessor()
 	delete[] InputArray;
 	delete[] OutputArray;
 	delete[] scopeData;
-	delete[] frameProcessArray;
+	delete[] tempInputArray;
 	delete[] previousOutputArray;
 }
 
@@ -219,7 +219,7 @@ void puannhiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 
 	if (!tag)
 	{
-		forwardFFT->perform(InputArray, OutputArray, false);
+		forwardFFT->perform(InputArray, tempInputArray, false);
 		tag = true;
 	}
 

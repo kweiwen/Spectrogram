@@ -89,7 +89,8 @@ void puannhiAudioProcessorEditor::timerCallback()
 {
 	if (audioProcessor.tag = true)
 	{		
-		memcpy(audioProcessor.frameProcessArray, audioProcessor.OutputArray, sizeof(std::complex<float>)*audioProcessor.N);
+		memcpy(audioProcessor.OutputArray, audioProcessor.tempInputArray, sizeof(std::complex<float>) * audioProcessor.N);
+
 		drawNextFrameOfSpectrum();
 		repaint();
 		audioProcessor.tag = false;
@@ -101,9 +102,9 @@ void puannhiAudioProcessorEditor::drawNextFrameOfSpectrum()
 	float mindB = -100.0f;
 	float maxdB = 6.0f;
 	
-	for (int i = 0; i <= audioProcessor.N; i++)
+	for (int i = 0; i < audioProcessor.N; i++)
 	{
-		auto amplitude = std::abs(audioProcessor.frameProcessArray[i]) / audioProcessor.N;
+		auto amplitude = std::abs(audioProcessor.OutputArray[i]) / audioProcessor.N;
 		//auto angle = std::arg(audioProcessor.frameProcessArray[i]);
 		audioProcessor.currentOutputArray[i] = juce::Decibels::gainToDecibels(amplitude);
 		audioProcessor.previousOutputArray[i] = Ratio * audioProcessor.currentOutputArray[i] + (1- Ratio)*audioProcessor.previousOutputArray[i];
