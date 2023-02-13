@@ -71,12 +71,10 @@ public:
 	float* scopeData = new float[scopeSize];
 	int TargetFreqNum;
 
-	int N = 2048;
+	const int N = 2048;
 	std::complex<float>* InputArray = new std::complex<float>[N];
 	std::complex<float>* OutputArray = new std::complex<float>[N];
-	std::complex<float>* tempInputArray = new std::complex<float>[N];
-	std::complex<float>* lastOutputArray = new std::complex<float>[N];
-	float* PreviousArray = new float[N];
+	std::complex<float>* frameProcessArray = new std::complex<float>[N];
 	int iteration = log2(N);
 
 	CircularBuffer<float> circularbuffer;

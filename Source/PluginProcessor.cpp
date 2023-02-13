@@ -29,8 +29,8 @@ puannhiAudioProcessor::~puannhiAudioProcessor()
 {
 	delete[] InputArray;
 	delete[] OutputArray;
-	delete[] PreviousArray;
 	delete[] scopeData;
+	delete[] frameProcessArray;
 	delete[] previousOutputArray;
 }
 
@@ -102,7 +102,6 @@ void puannhiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
 	forwardFFT = new juce::dsp::FFT(log2(N));
 
 	input_sample_rate = sampleRate;
-	//generate_twiddle(twiddle, N, iteration);
 
 	circularbuffer.createCircularBuffer(N);
 
