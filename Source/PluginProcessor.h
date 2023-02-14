@@ -66,7 +66,7 @@ public:
 	float target_frequency[10] = { 240,500,750,1000,1250,1500,1800,2200,3000,5000 };
 	const int DivideUnit = 10;
 	float drawFFT[10*10];
-	const int scopeSize = 512;  
+	const int scopeSize = 128;  
 	float* scopeData = new float[scopeSize];
 	int TargetFreqNum;
 
