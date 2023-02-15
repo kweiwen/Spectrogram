@@ -15,41 +15,50 @@ puannhiAudioProcessorEditor::puannhiAudioProcessorEditor (puannhiAudioProcessor&
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-	targetFreqNum = sizeof(audioProcessor.target_frequency) / sizeof(audioProcessor.target_frequency[0]);
-    setSize (1000, 500);
-	startTimerHz(30);
-
-	OutputRadio.setSliderStyle(juce::Slider::LinearHorizontal);
-	OutputRadio.setRange(0.01, 1.0, 0.01);
-	OutputRadio.setValue(0.2);
-	OutputRadio.onValueChange = [this] {Ratio = OutputRadio.getValue(); };
-	addAndMakeVisible(&OutputRadio);
-
-	addAndMakeVisible(l_input_fftSize);
-	l_input_fftSize.setText("FFTSize : "+juce::String(audioProcessor.N), juce::dontSendNotification);
-
-	addAndMakeVisible(l_OutputRadio);
-	l_OutputRadio.setText("Forgetting Factor:", juce::dontSendNotification);
-
-	addAndMakeVisible(l_windowfunction);
-	l_windowfunction.setText("Window Function:  ", juce::dontSendNotification);
-
-	addAndMakeVisible(s_windowfunction);
-	s_windowfunction.setTextWhenNothingSelected("Rectangular Window");
-	s_windowfunction.addItem("Rectangular Window", 1);
-	s_windowfunction.addItem("Hanning Window", 2);
-	s_windowfunction.addItem("Hamming Window", 3);
-	s_windowfunction.addItem("Blackman Window",4);
-	s_windowfunction.addItem("Triangle Window", 5);
-	s_windowfunction.onChange = [this] {audioProcessor.WindowTag = s_windowfunction.getSelectedId(); };
+    setSize (640, 480);
+	startTimerHz(25);
 
 	// specific private member for analysis
 	mindB = -100.0f;
 	maxdB = 0.0f;
 	max = -100.0f;
+	ratio = 20;
 
-	addAndMakeVisible(label);
-	label.setText("null", juce::dontSendNotification);
+	// init ui
+	Lratio.setText("Forgetting Factor", juce::dontSendNotification);
+	addAndMakeVisible(Lratio);
+
+	Sratio.setSliderStyle(juce::Slider::LinearHorizontal);
+	Sratio.setRange(1, 100, 1);
+	Sratio.setValue(ratio);
+	Sratio.setTextValueSuffix(" %");
+	Sratio.onValueChange = [this] {ratio = Sratio.getValue(); };
+	addAndMakeVisible(&Sratio);
+
+	LwinFunc.setText("Window Function", juce::dontSendNotification);
+	addAndMakeVisible(LwinFunc);
+
+	CwinFunc.setTextWhenNothingSelected("Rectangular");
+	CwinFunc.addItem("Rectangular", 1);
+	CwinFunc.addItem("Hanning",  2);
+	CwinFunc.addItem("Hamming",  3);
+	CwinFunc.addItem("Blackman", 4);
+	CwinFunc.addItem("Triangle", 5);
+	// should place in editor side
+	CwinFunc.onChange = [this] {audioProcessor.WindowTag = CwinFunc.getSelectedId(); };
+	addAndMakeVisible(CwinFunc);
+
+	Lpeak.setText("Peak Decibel", juce::dontSendNotification);
+	addAndMakeVisible(Lpeak);
+
+	LpeakVal.setText(juce::String(mindB), juce::dontSendNotification);
+	addAndMakeVisible(LpeakVal);
+
+	LfftSize.setText("Transform Size", juce::dontSendNotification);
+	addAndMakeVisible(LfftSize);
+
+	LfftSizeVal.setText(juce::String(audioProcessor.N), juce::dontSendNotification);
+	addAndMakeVisible(LfftSizeVal);
 }
 
 puannhiAudioProcessorEditor::~puannhiAudioProcessorEditor()
@@ -59,8 +68,6 @@ puannhiAudioProcessorEditor::~puannhiAudioProcessorEditor()
 //==============================================================================
 void puannhiAudioProcessorEditor::paint (juce::Graphics& g)
 {
-	g.setOpacity(1.0f);
-	g.setColour(juce::Colours::greenyellow);
 	drawFrame(g);
 	drawCoordiante(g);
 }
@@ -68,27 +75,34 @@ void puannhiAudioProcessorEditor::paint (juce::Graphics& g)
 void puannhiAudioProcessorEditor::resized()
 {
 	auto area = getLocalBounds();
-	//auto audioSetupCompArea = area.removeFromLeft(area.getWidth() / 3);
-	//audioSetupComp.setBounds(audioSetupCompArea);
-	auto input_channel_label_area = area.removeFromTop(30);
-	auto input_channel_items_area = area.removeFromTop(30);
+	area.removeFromTop(40);
 
-	l_input_channel.setBounds(input_channel_label_area);
-	s_input_channel.setBounds(input_channel_items_area);
 	area.reduce(40, 30);
 	SpectrogramArea = area;
 
+	auto row1 = 10;
+	auto row2 = 40;
 
-	label.setBounds(300, 30, 150, 30);
+	LwinFunc.setBounds(40, row1, 120, 25);
+	CwinFunc.setBounds(160, row1, 250, 25);
+	Lratio.setBounds(40, row2, 120, 25);
+	Sratio.setBounds(160, row2, 250, 25);
 
-	l_input_fftSize.setBounds(370, 30, 150, 30);
+	Lpeak.setBounds(420, row1, 100, 25);
+	LpeakVal.setBounds(520, row1, 80, 25);
+	LfftSize.setBounds(420, row2, 100, 25);
+	LfftSizeVal.setBounds(520, row2, 80, 25);
 
-	
-	OutputRadio.setBounds(150, 30, 150, 30);
-	l_OutputRadio.setBounds(25, 30, 150, 30);
+	width_f = SpectrogramArea.getWidth();
+	height_f = SpectrogramArea.getHeight();
 
-	l_windowfunction.setBounds(500, 30, 130, 30);
-	s_windowfunction.setBounds(650, 30, 180, 30);
+	width_i = SpectrogramArea.getWidth();
+	height_i = SpectrogramArea.getHeight();
+
+	offset_x = SpectrogramArea.getX();
+	offset_y = SpectrogramArea.getY();
+
+	gridSize = width_f / (float)audioProcessor.scopeSize;
 }
 
 
@@ -110,7 +124,7 @@ void puannhiAudioProcessorEditor::drawNextFrameOfSpectrum()
 		auto amplitude = std::abs(audioProcessor.OutputArray[i]) * 2;
 		//auto angle = std::arg(audioProcessor.frameProcessArray[i]);
 		audioProcessor.currentOutputArray[i] = amplitude;
-		audioProcessor.previousOutputArray[i] = Ratio * audioProcessor.currentOutputArray[i] + (1- Ratio)*audioProcessor.previousOutputArray[i];
+		audioProcessor.previousOutputArray[i] = (ratio / 100.0f) * audioProcessor.currentOutputArray[i] + (1.0f - (ratio / 100.0f)) * audioProcessor.previousOutputArray[i];
 	}
 
 	// convert data disribution from linear into logarithm
@@ -133,26 +147,10 @@ void puannhiAudioProcessorEditor::drawNextFrameOfSpectrum()
 			max = level_limited;
 		}
 	}
-
-	label.setText(juce::String(max), juce::dontSendNotification);
-	//audioProcessor.scopeData[0] = 1.0f;
-	//audioProcessor.scopeData[1] = 1.0f;
-	//audioProcessor.scopeData[2] = 1.0f;
-	//audioProcessor.scopeData[3] = 1.0f;
 }
 
 void puannhiAudioProcessorEditor::drawFrame(juce::Graphics& g)
 {
-	auto width = SpectrogramArea.getWidth();
-	auto height = SpectrogramArea.getHeight();
-	float width_f = (float)width;
-	float height_f = (float)height;
-
-	float offset_x = SpectrogramArea.getX();
-	float offset_y = SpectrogramArea.getY();
-
-	auto gridSize = width / (float)audioProcessor.scopeSize;
-
 	g.setColour(juce::Colours::grey);
 	g.fillRect(offset_x, offset_y, width_f, height_f);
 
@@ -161,9 +159,9 @@ void puannhiAudioProcessorEditor::drawFrame(juce::Graphics& g)
 	{
 		g.setColour(juce::Colours::antiquewhite);
 		g.drawLine({ 
-			offset_x + (float)juce::jmap(i - 1, 0, audioProcessor.scopeSize - 1, 0, width),
+			offset_x + (float)juce::jmap(i - 1, 0, audioProcessor.scopeSize - 1, 0, width_i),
 			offset_y + juce::jmap(audioProcessor.scopeData[i - 1], 0.0f, 1.0f, height_f, 0.0f),
-			offset_x + (float)juce::jmap(i,     0, audioProcessor.scopeSize - 1, 0, width),
+			offset_x + (float)juce::jmap(i,     0, audioProcessor.scopeSize - 1, 0, width_i),
 			offset_y + juce::jmap(audioProcessor.scopeData[i],     0.0f, 1.0f, height_f, 0.0f)
 			});
 	}
@@ -176,55 +174,21 @@ void puannhiAudioProcessorEditor::drawFrame(juce::Graphics& g)
 		g.fillRect(offset_x + i * gridSize, offset_y + (height_f - val), gridSize, height_f - (height_f - val));
 	}
 
+	LpeakVal.setText(juce::String(max), juce::dontSendNotification);
 }
 
 void puannhiAudioProcessorEditor::drawCoordiante(juce::Graphics & g)
 {
-	auto area = SpectrogramArea;
-	auto width = SpectrogramArea.getWidth();
-	auto height = SpectrogramArea.getHeight();
-	//g.setFont(12.0f);
-	//g.setColour(juce::Colours::blue);
-	//auto deltaX=(float)juce::jmap(1 * 10, 0, audioProcessor.scopeSize, 0, width);
-	
-	//for (int i = 0; i < 10; ++i)
-	//{
-	//	auto x = area.getX() + (float)juce::jmap(i, 0, 10,0, width);
-	//	g.setColour(juce::Colours::whitesmoke);
-	//	g.drawFittedText(juce::String((audioProcessor.target_frequency[i] < 1000.0f) ? juce::String(audioProcessor.target_frequency[i]) + " Hz" : juce::String(audioProcessor.target_frequency[i] / 1000.0f) + " kHz"),
-	//		juce::roundToInt(x + deltaX/4), area.getBottom() + 8, 40, 15, juce::Justification::left, 1);
-	//	if (i >= 1)
-	//	{
-	//		g.setColour(juce::Colours::whitesmoke);
-	//		g.drawVerticalLine(juce::roundToInt(area.getX() + i / 10.0f * area.getWidth()), area.getY(), area.getBottom());
-	//	}
-	//}
-	//
-	//g.setColour(juce::Colours::whitesmoke);
-	//g.drawFittedText("  6 dB", area.getX() - 35, area.getY() + 2 - 5, 50, 14, juce::Justification::left, 1);
-	//g.drawFittedText("  0 dB", area.getX() - 35, juce::roundToInt(area.getY() + 0.056 * area.getHeight()) - 5, 50, 14, juce::Justification::left, 1);
-	//g.drawFittedText("-10 dB", area.getX() - 40, juce::roundToInt(area.getY() + 0.15 * area.getHeight()) - 5, 50, 14, juce::Justification::left, 1);
-	//g.drawFittedText("-30 dB", area.getX() - 40, juce::roundToInt(area.getY() + 0.34 * area.getHeight()) - 5, 50, 14, juce::Justification::left, 1);
-	//g.drawFittedText("-40 dB", area.getX() - 40, juce::roundToInt(area.getY() + 0.43 * area.getHeight()) - 5, 50, 14, juce::Justification::left, 1);
-	//g.drawFittedText("-50 dB", area.getX() - 40, juce::roundToInt(area.getY() + 0.53 * area.getHeight()) - 5, 50, 14, juce::Justification::left, 1);
-	//g.drawFittedText("-60 dB", area.getX() - 40, juce::roundToInt(area.getY() + 0.62 * area.getHeight()) - 5, 50, 14, juce::Justification::left, 1);
-	//g.drawFittedText("-70 dB", area.getX() - 40, juce::roundToInt(area.getY() + 0.72 * area.getHeight()) - 5, 50, 14, juce::Justification::left, 1);
-	//g.drawFittedText("-80 dB", area.getX() - 40, juce::roundToInt(area.getY() + 0.81 * area.getHeight()) - 5, 50, 14, juce::Justification::left, 1);
-	//g.drawFittedText("-90 dB", area.getX() - 40, juce::roundToInt(area.getY() + 0.90 * area.getHeight()) - 5, 50, 14, juce::Justification::left, 1);
-	//g.drawFittedText("-100 dB", area.getX() - 40, juce::roundToInt(area.getY() + 1.0 * area.getHeight()) - 5, 50, 14, juce::Justification::left, 1);
+	// should be driven by gui event
+	g.setColour(juce::Colours::red);
+	g.fillRect(offset_x, offset_y, 50.0f, 50.0f);
 
-	//g.setColour(juce::Colours::whitesmoke);
-	//g.drawHorizontalLine(juce::roundToInt(area.getY() + 0.00 * area.getHeight()), area.getX(), area.getRight());
-	//g.drawHorizontalLine(juce::roundToInt(area.getY() + 0.056 * area.getHeight()), area.getX(), area.getRight());
-	//g.drawHorizontalLine(juce::roundToInt(area.getY() + 0.15 * area.getHeight()), area.getX(), area.getRight());
-	//g.drawHorizontalLine(juce::roundToInt(area.getY() + 0.34 * area.getHeight()), area.getX(), area.getRight());
-	//g.drawHorizontalLine(juce::roundToInt(area.getY() + 0.43 * area.getHeight()), area.getX(), area.getRight());
-	//g.drawHorizontalLine(juce::roundToInt(area.getY() + 0.53 * area.getHeight()), area.getX(), area.getRight());
-	//g.drawHorizontalLine(juce::roundToInt(area.getY() + 0.62 * area.getHeight()), area.getX(), area.getRight());
-	//g.drawHorizontalLine(juce::roundToInt(area.getY() + 0.72 * area.getHeight()), area.getX(), area.getRight());
-	//g.drawHorizontalLine(juce::roundToInt(area.getY() + 0.81 * area.getHeight()), area.getX(), area.getRight());
-	//g.drawHorizontalLine(juce::roundToInt(area.getY() + 0.90 * area.getHeight()), area.getX(), area.getRight());
-	//g.drawHorizontalLine(juce::roundToInt(area.getY() + 1.0 * area.getHeight()), area.getX(), area.getRight());
+	g.setColour(juce::Colours::antiquewhite);
+	for (int i = 0; i < 11; i++)
+	{
+		auto y_pos = offset_y + (i * height_f / 10);
+		g.drawHorizontalLine(y_pos, offset_x, offset_x + width_f);
+	}
 }
 
 

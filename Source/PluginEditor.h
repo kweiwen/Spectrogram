@@ -30,26 +30,19 @@ public:
 	void drawFrame(juce::Graphics& g);
 	void drawCoordiante(juce::Graphics& g);
 
-	juce::Label label;
-
-
-	int current_input_fftSize_index = 1;
-	juce::Label l_input_channel;
-	juce::ComboBox s_input_channel;
-	juce::Label l_input_fftSize;
-	juce::ComboBox s_input_fftSize;
-	juce::StringArray current_input_channel_items;
-	int current_input_channel_index = 0;
-	juce::StringArray last_input_channel_items;
-	juce::StringArray empty_input_channel_items;
 	juce::Rectangle<int> SpectrogramArea;
 
-	juce::Slider OutputRadio;
-	juce::Label l_OutputRadio;
-	float Ratio;
-	int targetFreqNum;
-	juce::Label l_windowfunction;
-	juce::ComboBox s_windowfunction;
+	juce::Label LwinFunc;
+	juce::ComboBox CwinFunc;
+
+	juce::Label Lratio;
+	juce::Slider Sratio;
+	
+	juce::Label Lpeak;
+	juce::Label LpeakVal;
+
+	juce::Label LfftSize;
+	juce::Label LfftSizeVal;
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
@@ -58,6 +51,14 @@ private:
 	float mindB;
 	float maxdB;
 	float max;
+	float ratio;
+	float width_f;
+	float height_f;
+	int width_i;
+	int height_i;
+	float offset_x;
+	float offset_y;
+	float gridSize;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (puannhiAudioProcessorEditor)
 };
