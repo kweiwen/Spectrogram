@@ -11,6 +11,26 @@
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 
+class UI_LookAndFeel : public juce::LookAndFeel_V4
+{
+public:
+	juce::Font getLabelFont(juce::Label&) override
+	{
+		return { 12.f };
+	}
+
+	juce::Font getComboBoxFont(juce::ComboBox& /*box*/) override
+	{
+		return { 12.f };
+	}
+
+	juce::Font getPopupMenuFont() override
+	{
+		return { 12.f };
+	}
+};
+
+
 //==============================================================================
 /**
 */
@@ -59,6 +79,8 @@ private:
 	float offset_x;
 	float offset_y;
 	float gridSize;
+
+	std::unique_ptr<UI_LookAndFeel> lnf;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (puannhiAudioProcessorEditor)
 };

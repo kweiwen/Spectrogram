@@ -24,45 +24,64 @@ puannhiAudioProcessorEditor::puannhiAudioProcessorEditor (puannhiAudioProcessor&
 	max = -100.0f;
 	ratio = 20;
 
-	// init ui
+	// init look and feel
+	lnf.reset(new UI_LookAndFeel);
+
+	// initialisation ui
 	Lratio.setText("Forgetting Factor", juce::dontSendNotification);
+	Lratio.setLookAndFeel(lnf.get());
 	addAndMakeVisible(Lratio);
 
 	Sratio.setSliderStyle(juce::Slider::LinearHorizontal);
 	Sratio.setRange(1, 100, 1);
 	Sratio.setValue(ratio);
 	Sratio.setTextValueSuffix(" %");
+	Sratio.setLookAndFeel(lnf.get());
 	Sratio.onValueChange = [this] {ratio = Sratio.getValue(); };
 	addAndMakeVisible(&Sratio);
 
 	LwinFunc.setText("Window Function", juce::dontSendNotification);
+	LwinFunc.setLookAndFeel(lnf.get());
 	addAndMakeVisible(LwinFunc);
 
-	CwinFunc.setTextWhenNothingSelected("Rectangular");
 	CwinFunc.addItem("Rectangular", 1);
 	CwinFunc.addItem("Hanning",  2);
 	CwinFunc.addItem("Hamming",  3);
 	CwinFunc.addItem("Blackman", 4);
 	CwinFunc.addItem("Triangle", 5);
+	CwinFunc.setSelectedItemIndex(0, true);
+	CwinFunc.setLookAndFeel(lnf.get());
 	// should place in editor side
 	CwinFunc.onChange = [this] {audioProcessor.WindowTag = CwinFunc.getSelectedId(); };
 	addAndMakeVisible(CwinFunc);
 
 	Lpeak.setText("Peak Decibel", juce::dontSendNotification);
+	Lpeak.setLookAndFeel(lnf.get());
 	addAndMakeVisible(Lpeak);
 
 	LpeakVal.setText(juce::String(mindB), juce::dontSendNotification);
+	LpeakVal.setLookAndFeel(lnf.get());
 	addAndMakeVisible(LpeakVal);
 
 	LfftSize.setText("Transform Size", juce::dontSendNotification);
+	LfftSize.setLookAndFeel(lnf.get());
 	addAndMakeVisible(LfftSize);
 
 	LfftSizeVal.setText(juce::String(audioProcessor.N), juce::dontSendNotification);
+	LfftSizeVal.setLookAndFeel(lnf.get());
 	addAndMakeVisible(LfftSizeVal);
 }
 
 puannhiAudioProcessorEditor::~puannhiAudioProcessorEditor()
 {
+	CwinFunc.setLookAndFeel(nullptr);
+	LwinFunc.setLookAndFeel(nullptr);
+	Sratio.setLookAndFeel(nullptr);
+	Lratio.setLookAndFeel(nullptr);
+	Lpeak.setLookAndFeel(nullptr);
+	LpeakVal.setLookAndFeel(nullptr);
+	LfftSize.setLookAndFeel(nullptr);
+	LfftSizeVal.setLookAndFeel(nullptr);
 }
 
 //==============================================================================
@@ -180,14 +199,14 @@ void puannhiAudioProcessorEditor::drawFrame(juce::Graphics& g)
 void puannhiAudioProcessorEditor::drawCoordiante(juce::Graphics & g)
 {
 	// should be driven by gui event
-	g.setColour(juce::Colours::red);
-	g.fillRect(offset_x, offset_y, 50.0f, 50.0f);
-
 	g.setColour(juce::Colours::antiquewhite);
 	for (int i = 0; i < 11; i++)
 	{
 		auto y_pos = offset_y + (i * height_f / 10);
+		auto level = 0 - i * 10;
 		g.drawHorizontalLine(y_pos, offset_x, offset_x + width_f);
+		g.setFont(g.getCurrentFont().withHeight(10.0f));
+		g.drawText(juce::String(level) + juce::String("dB"), offset_x - 40, int(y_pos) - 12, 35, 25, juce::Justification::right, false);
 	}
 }
 
