@@ -23,6 +23,7 @@ puannhiAudioProcessorEditor::puannhiAudioProcessorEditor (puannhiAudioProcessor&
 	maxdB = 0.0f;
 	max = -100.0f;
 	ratio = 20;
+	skew = 0.367;
 
 	// init look and feel
 	lnf.reset(new UI_LookAndFeel);
@@ -149,7 +150,7 @@ void puannhiAudioProcessorEditor::drawNextFrameOfSpectrum()
 	// convert data disribution from linear into logarithm
 	for (int i = 0; i < audioProcessor.scopeSize; i++)
 	{
-		auto skewedProportionX = 1.0f - std::exp(std::log(1.0f - (float)i / (float)audioProcessor.scopeSize) * 0.2f);
+		auto skewedProportionX = 1.0f - std::exp(std::log(1.0f - (float)i / (float)audioProcessor.scopeSize) * skew);
 		auto fftDataIndex = juce::jlimit(0, audioProcessor.N / 2, (int)(skewedProportionX * (float)audioProcessor.N * 0.5f));
 
 		auto Ve = juce::Decibels::gainToDecibels(audioProcessor.previousOutputArray[fftDataIndex]);
@@ -208,6 +209,24 @@ void puannhiAudioProcessorEditor::drawCoordiante(juce::Graphics & g)
 		g.setFont(g.getCurrentFont().withHeight(10.0f));
 		g.drawText(juce::String(level) + juce::String("dB"), offset_x - 40, int(y_pos) - 12, 35, 25, juce::Justification::right, false);
 	}
+	
+
+	for (int i = 1; i < 20; i++)
+	{
+		auto frequency = i * 1000.0f;
+		float x_pos = offset_x + inverse_x(frequency) * width_f;
+		g.drawVerticalLine(x_pos, offset_y, offset_y + height_f);
+		if (i < 14)
+		{
+			g.drawText(juce::String(i) + juce::String("k"), int(x_pos) - 16, offset_y + height_f, 30, 25, juce::Justification::centred, false);
+		}
+		else if (i == 15)
+		{
+			g.drawText(juce::String(i) + juce::String("k"), int(x_pos) - 16, offset_y + height_f, 30, 25, juce::Justification::centred, false);
+		}
+	}
+	g.drawVerticalLine(offset_x, offset_y, offset_y + height_f);
+	g.drawVerticalLine(offset_x + width_f, offset_y, offset_y + height_f);
 }
 
 
@@ -231,4 +250,11 @@ void puannhiAudioProcessorEditor::unit_test(juce::Graphics& g)
 		g.setColour(juce::Colours::greenyellow);
 		g.fillRect(offset_x + i * gridSize, offset_y + (height_f - val), gridSize, height_f - (height_f - val));
 	}
+}
+
+float puannhiAudioProcessorEditor::inverse_x(float frequency)
+{
+	auto fftDataIndex = frequency * audioProcessor.N / audioProcessor.getSampleRate();
+	auto skewedProportionX = fftDataIndex * 2 / audioProcessor.N;
+	return 1 - std::powf(1 - skewedProportionX, 1 / skew);
 }

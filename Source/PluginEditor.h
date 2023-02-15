@@ -49,6 +49,7 @@ public:
 	void drawNextFrameOfSpectrum();
 	void drawFrame(juce::Graphics& g);
 	void drawCoordiante(juce::Graphics& g);
+	float inverse_x(float freq);
 
 	juce::Rectangle<int> SpectrogramArea;
 
@@ -71,6 +72,7 @@ private:
 	float mindB;
 	float maxdB;
 	float max;
+	float skew;
 	float ratio;
 	float width_f;
 	float height_f;
