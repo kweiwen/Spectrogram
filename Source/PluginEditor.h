@@ -23,15 +23,15 @@ public:
     //==============================================================================
     void paint (juce::Graphics&) override;
     void resized() override;
-
 	void timerCallback() override;
-	void FindIndex(int numberLeft, int numberRight, int NumberFrequecy, int* Index);
-	void BandDivide(int FreqNumber, int TargetFreNum, float * OutputArray, int* FreqNumInterval, int* FreqNumArray, int N, int* Index);
-	void BandInternalDivide(int NumTargetFreNum, int DivideUnit, int StartIndex, int EndIndex, float* OutputArray, float* drawArray);
-	void DrawFFTSpectrumDivide(float* drawArray, float* TargetFrequency, int TargetFreNum, int N, int fs, float* OutputArray, int DivideUnit);
+
+	void unit_test(juce::Graphics& g);
 	void drawNextFrameOfSpectrum();
 	void drawFrame(juce::Graphics& g);
-	void drawCoordiante(juce::Graphics & g);
+	void drawCoordiante(juce::Graphics& g);
+
+	juce::Label label;
+
 
 	int current_input_fftSize_index = 1;
 	juce::Label l_input_channel;
@@ -54,6 +54,10 @@ private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
     puannhiAudioProcessor& audioProcessor;
+
+	float mindB;
+	float maxdB;
+	float max;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (puannhiAudioProcessorEditor)
 };

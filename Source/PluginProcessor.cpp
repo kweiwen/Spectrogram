@@ -167,7 +167,8 @@ void puannhiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 
 	for (auto i = 0; i < buffer.getNumSamples(); ++i)
 	{
-		auto data = (channelDataL[i] + channelDataR[i]) * 0.5;
+		//auto data = (channelDataL[i] + channelDataR[i]) * 0.5;
+		auto data = (channelDataL[i]);
 		circularbuffer.writeBuffer(data);
 	}
 
