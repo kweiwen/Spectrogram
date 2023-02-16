@@ -23,6 +23,7 @@ puannhiAudioProcessorEditor::puannhiAudioProcessorEditor (puannhiAudioProcessor&
 	maxdB = 0.0f;
 	max = -100.0f;
 	ratio = 20;
+	// change skew to 1.0f to get linear scale
 	skew = 0.3f;
 
 	// init look and feel
@@ -215,6 +216,7 @@ void puannhiAudioProcessorEditor::drawFrame(juce::Graphics& g)
 		g.fillRect(rect);
 	}
 
+	// display decibel
 	LpeakVal.setText(juce::String(max), juce::dontSendNotification);
 }
 
