@@ -28,6 +28,32 @@ public:
 	{
 		return { 12.f };
 	}
+
+	void drawPopupMenuItem(juce::Graphics& g, const juce::Rectangle<int>& area,
+		const bool isSeparator, const bool isActive,
+		const bool isHighlighted, const bool isTicked,
+		const bool hasSubMenu, const juce::String& text,
+		const juce::String& shortcutKeyText,
+		const juce::Drawable* icon, const juce::Colour* const textColour) override
+	{
+		LookAndFeel_V4::drawPopupMenuItem(g, area, 
+			isSeparator, isActive, 
+			isHighlighted, false, 
+			hasSubMenu, text, 
+			shortcutKeyText,
+			icon, textColour);
+		if (isTicked)
+		{
+			g.setColour(juce::Colours::antiquewhite);
+			auto maxFontHeight = (float)area.getHeight();
+			auto TopLeftPt = area.getTopLeft();
+			auto x = TopLeftPt.getX();
+			auto y = TopLeftPt.getY();
+			auto rectangle = juce::Rectangle<float>(x, y, maxFontHeight, maxFontHeight);
+			rectangle.reduce(8.0f, 8.0f);
+			g.drawEllipse(rectangle, 2);
+		}
+	}
 };
 
 

@@ -211,16 +211,16 @@ void puannhiAudioProcessorEditor::drawCoordiante(juce::Graphics & g)
 	}
 	
 
-	for (int i = 1; i < 20; i++)
+	for (int i = 1; i < 21; i++)
 	{
 		auto frequency = i * 1000.0f;
 		float x_pos = offset_x + inverse_x(frequency) * width_f;
 		g.drawVerticalLine(x_pos, offset_y, offset_y + height_f);
-		if (i < 14)
+		if (i < 11)
 		{
 			g.drawText(juce::String(i) + juce::String("k"), int(x_pos) - 16, offset_y + height_f, 30, 25, juce::Justification::centred, false);
 		}
-		else if (i == 15)
+		else if (i == 12 || i == 15 || i == 20)
 		{
 			g.drawText(juce::String(i) + juce::String("k"), int(x_pos) - 16, offset_y + height_f, 30, 25, juce::Justification::centred, false);
 		}
