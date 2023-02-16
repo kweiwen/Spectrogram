@@ -122,7 +122,7 @@ void puannhiAudioProcessorEditor::resized()
 	offset_x = SpectrogramArea.getX();
 	offset_y = SpectrogramArea.getY();
 
-	gridSize = width_f / (float)audioProcessor.scopeSize;
+	gridSize = width_f / (float)audioProcessor.lineScopeSize;
 }
 
 
@@ -148,9 +148,9 @@ void puannhiAudioProcessorEditor::drawNextFrameOfSpectrum()
 	}
 
 	// convert data disribution from linear into logarithm
-	for (int i = 0; i < audioProcessor.scopeSize; i++)
+	for (int i = 0; i < audioProcessor.lineScopeSize; i++)
 	{
-		auto skewedProportionX = 1.0f - std::exp(std::log(1.0f - (float)i / (float)audioProcessor.scopeSize) * skew);
+		auto skewedProportionX = 1.0f - std::exp(std::log(1.0f - (float)i / (float)audioProcessor.lineScopeSize) * skew);
 		auto fftDataIndex = juce::jlimit(0, audioProcessor.N / 2, (int)(skewedProportionX * (float)audioProcessor.N * 0.5f));
 
 		auto Ve = juce::Decibels::gainToDecibels(audioProcessor.previousOutputArray[fftDataIndex]);
@@ -160,7 +160,7 @@ void puannhiAudioProcessorEditor::drawNextFrameOfSpectrum()
 		
 		auto level = juce::jmap(level_limited, mindB, maxdB, 0.0f, 1.0f);
 		
-		audioProcessor.scopeData[i] = level;
+		audioProcessor.lineScopeData[i] = level;
 
 		if (level_limited > max)
 		{
@@ -175,23 +175,25 @@ void puannhiAudioProcessorEditor::drawFrame(juce::Graphics& g)
 	g.fillRect(offset_x, offset_y, width_f, height_f);
 
 	// line graph
-	for (int i = 1; i < audioProcessor.scopeSize; i++)
+	for (int i = 1; i < audioProcessor.lineScopeSize; i++)
 	{
 		g.setColour(juce::Colours::antiquewhite);
 		g.drawLine({ 
-			offset_x + (float)juce::jmap(i - 1, 0, audioProcessor.scopeSize - 1, 0, width_i),
-			offset_y + juce::jmap(audioProcessor.scopeData[i - 1], 0.0f, 1.0f, height_f, 0.0f),
-			offset_x + (float)juce::jmap(i,     0, audioProcessor.scopeSize - 1, 0, width_i),
-			offset_y + juce::jmap(audioProcessor.scopeData[i],     0.0f, 1.0f, height_f, 0.0f)
+			offset_x + (float)juce::jmap(i - 1, 0, audioProcessor.lineScopeSize - 1, 0, width_i),
+			offset_y + juce::jmap(audioProcessor.lineScopeData[i - 1], 0.0f, 1.0f, height_f, 0.0f),
+			offset_x + (float)juce::jmap(i,     0, audioProcessor.lineScopeSize - 1, 0, width_i),
+			offset_y + juce::jmap(audioProcessor.lineScopeData[i],     0.0f, 1.0f, height_f, 0.0f)
 			});
 	}
 
 	// bar graph
-	for (int i = 0; i < audioProcessor.scopeSize; i++)
+	for (int i = 0; i < audioProcessor.lineScopeSize; i++)
 	{
-		auto val = juce::jmap(audioProcessor.scopeData[i], 0.0f, 1.0f, 0.0f, height_f);
 		g.setColour(juce::Colours::greenyellow);
-		g.fillRect(offset_x + i * gridSize, offset_y + (height_f - val), gridSize, height_f - (height_f - val));
+		auto val = juce::jmap(audioProcessor.lineScopeData[i], 0.0f, 1.0f, 0.0f, height_f);
+		auto rect = juce::Rectangle<float>(offset_x + i * gridSize, offset_y + (height_f - val), gridSize, height_f - (height_f - val));
+		rect.reduce(1, 0);
+		g.fillRect(rect);
 	}
 
 	LpeakVal.setText(juce::String(max), juce::dontSendNotification);
@@ -199,7 +201,9 @@ void puannhiAudioProcessorEditor::drawFrame(juce::Graphics& g)
 
 void puannhiAudioProcessorEditor::drawCoordiante(juce::Graphics & g)
 {
-	// should be driven by gui event
+	// should be driven by gui event?
+
+	// amplitude tick
 	g.setColour(juce::Colours::antiquewhite);
 	for (int i = 0; i < 11; i++)
 	{
@@ -209,13 +213,23 @@ void puannhiAudioProcessorEditor::drawCoordiante(juce::Graphics & g)
 		g.setFont(g.getCurrentFont().withHeight(10.0f));
 		g.drawText(juce::String(level) + juce::String("dB"), offset_x - 40, int(y_pos) - 12, 35, 25, juce::Justification::right, false);
 	}
-	
 
+	// draw 1st vertical tick
+	g.drawVerticalLine(offset_x, offset_y, offset_y + height_f);
+	// draw last vertical tick
+	g.drawVerticalLine(offset_x + width_f, offset_y, offset_y + height_f);
+	
+	// frequency tick
+	// k-interval
 	for (int i = 1; i < 21; i++)
 	{
 		auto frequency = i * 1000.0f;
 		float x_pos = offset_x + inverse_x(frequency) * width_f;
+
+		// draw line
 		g.drawVerticalLine(x_pos, offset_y, offset_y + height_f);
+
+		// draw text
 		if (i < 11)
 		{
 			g.drawText(juce::String(i) + juce::String("k"), int(x_pos) - 16, offset_y + height_f, 30, 25, juce::Justification::centred, false);
@@ -225,8 +239,21 @@ void puannhiAudioProcessorEditor::drawCoordiante(juce::Graphics & g)
 			g.drawText(juce::String(i) + juce::String("k"), int(x_pos) - 16, offset_y + height_f, 30, 25, juce::Justification::centred, false);
 		}
 	}
-	g.drawVerticalLine(offset_x, offset_y, offset_y + height_f);
-	g.drawVerticalLine(offset_x + width_f, offset_y, offset_y + height_f);
+
+	auto color = juce::Colours::antiquewhite.withAlpha(0.5f);
+	g.setColour(color);
+	// hundred-interval
+	for (int i = 1; i < 10; i++)
+	{
+		auto frequency = i * 100.0f;
+		float x_pos = offset_x + inverse_x(frequency) * width_f;
+
+		auto line = juce::Line<float>(x_pos, offset_y, x_pos, offset_y + height_f);
+		float arr[] = { 4.0f, 6.0f };
+		g.drawDashedLine(line, arr, 2);
+		//g.drawVerticalLine(x_pos, offset_y, offset_y + height_f);
+	}
+
 }
 
 
@@ -243,10 +270,10 @@ void puannhiAudioProcessorEditor::unit_test(juce::Graphics& g)
 	g.setColour(juce::Colours::grey);
 	g.fillRect(offset_x, offset_y, width_f, height_f);
 
-	auto gridSize = width / (float)audioProcessor.scopeSize;
-	for (int i = 0; i < audioProcessor.scopeSize; i++)
+	auto gridSize = width / (float)audioProcessor.lineScopeSize;
+	for (int i = 0; i < audioProcessor.lineScopeSize; i++)
 	{
-		auto val = juce::jmap(i / (float)audioProcessor.scopeSize, 0.0f, 1.0f, 0.0f, height_f);
+		auto val = juce::jmap(i / (float)audioProcessor.lineScopeSize, 0.0f, 1.0f, 0.0f, height_f);
 		g.setColour(juce::Colours::greenyellow);
 		g.fillRect(offset_x + i * gridSize, offset_y + (height_f - val), gridSize, height_f - (height_f - val));
 	}

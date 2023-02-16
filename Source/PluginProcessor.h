@@ -63,13 +63,10 @@ public:
 
 	int nextBlockReady = false;
 
-	float target_frequency[10] = { 240,500,750,1000,1250,1500,1800,2200,3000,5000 };
-	const int DivideUnit = 10;
-	float drawFFT[10*10];
-	const int scopeSize = 128;  
-	float* scopeData = new float[scopeSize];
-	int TargetFreqNum;
-
+	const int lineScopeSize = 128;  
+	float* lineScopeData = new float[lineScopeSize];
+	const int barScopeSize = 64;
+	float* barScopeData = new float[barScopeSize];
 
 	const int N = 2048;
 	std::complex<float>* InputArray = new std::complex<float>[N];

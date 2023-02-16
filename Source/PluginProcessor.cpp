@@ -29,7 +29,7 @@ puannhiAudioProcessor::~puannhiAudioProcessor()
 {
 	delete[] InputArray;
 	delete[] OutputArray;
-	delete[] scopeData;
+	delete[] lineScopeData;
 	delete[] previousOutputArray;
 	delete[] currentOutputArray;
 }
@@ -100,15 +100,11 @@ void puannhiAudioProcessor::changeProgramName (int index, const juce::String& ne
 void puannhiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
 	forwardFFT = new juce::dsp::FFT(log2(N));
-
 	input_sample_rate = sampleRate;
 
 	circularbuffer.createCircularBuffer(N);
-
 	circularbuffer.flushBuffer();
 
-	TargetFreqNum = sizeof(target_frequency) / sizeof(target_frequency[0]);
-	
 	//juce::zeromem(OutputArray, sizeof(std::complex<float>)*N);
 	juce::zeromem(previousOutputArray, sizeof(float)*N);
 	for (int i = 0; i < N; i++)
@@ -116,9 +112,14 @@ void puannhiAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
 		previousOutputArray[i] = juce::Decibels::gainToDecibels(previousOutputArray[i] / (N / 1));
 	}
 
-	for (int i = 0; i < scopeSize; i++)
+	for (int i = 0; i < lineScopeSize; i++)
 	{
-		scopeData[i] = 0;
+		lineScopeData[i] = 0.0f;
+	}
+
+	for (int i = 0; i < barScopeSize; i++)
+	{
+		barScopeData[i] = 0.0f;
 	}
 }
 
@@ -223,13 +224,7 @@ void puannhiAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 		forwardFFT->perform(InputArray, OutputArray, false);
 		nextBlockReady = true;
 	}
-
 }
-
-
-
-
-
 
 //==============================================================================
 bool puannhiAudioProcessor::hasEditor() const
