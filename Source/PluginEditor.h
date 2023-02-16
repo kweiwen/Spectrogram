@@ -54,6 +54,26 @@ public:
 			g.drawEllipse(rectangle, 2);
 		}
 	}
+
+	void drawTickBox(juce::Graphics& g, juce::Component& component,
+		float x, float y,
+		float w, float h,
+		bool ticked, bool isEnabled,
+		bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown)
+	{
+		LookAndFeel_V4::drawTickBox(g, component,
+			x, y,
+			w, h,
+			false, isEnabled, 
+			shouldDrawButtonAsHighlighted, shouldDrawButtonAsDown);
+
+		if (ticked)
+		{
+			auto rect = juce::Rectangle<float>(component.getHeight(), component.getHeight());
+			rect.reduce(8.0f, 8.0f);
+			g.drawEllipse(rect, 2);
+		}
+	}
 };
 
 
@@ -75,6 +95,9 @@ public:
 	void drawNextFrameOfSpectrum();
 	void drawFrame(juce::Graphics& g);
 	void drawCoordiante(juce::Graphics& g);
+	void drawFrequency(juce::Graphics& g);
+	void drawAmplitude(juce::Graphics& g);
+
 	float inverse_x(float freq);
 
 	juce::Rectangle<int> SpectrogramArea;
@@ -90,6 +113,9 @@ public:
 
 	juce::Label LfftSize;
 	juce::Label LfftSizeVal;
+
+	juce::Label LxScale;
+	juce::ToggleButton BxScale;
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
@@ -100,6 +126,7 @@ private:
 	float max;
 	float skew;
 	float ratio;
+	bool isLog;
 	float width_f;
 	float height_f;
 	int width_i;

@@ -23,8 +23,10 @@ puannhiAudioProcessorEditor::puannhiAudioProcessorEditor (puannhiAudioProcessor&
 	maxdB = 0.0f;
 	max = -100.0f;
 	ratio = 20;
+
 	// change skew to 1.0f to get linear scale
-	skew = 0.3f;
+	skew = 1.0f; 
+	isLog = false;
 
 	// init look and feel
 	lnf.reset(new UI_LookAndFeel);
@@ -72,6 +74,15 @@ puannhiAudioProcessorEditor::puannhiAudioProcessorEditor (puannhiAudioProcessor&
 	LfftSizeVal.setText(juce::String(audioProcessor.N), juce::dontSendNotification);
 	LfftSizeVal.setLookAndFeel(lnf.get());
 	addAndMakeVisible(LfftSizeVal);
+
+	LxScale.setText("Logarithmic", juce::dontSendNotification);
+	LxScale.setLookAndFeel(lnf.get());
+	addAndMakeVisible(LxScale);
+
+	BxScale.setLookAndFeel(lnf.get());
+	BxScale.onStateChange = [this] {isLog = BxScale.getToggleState(); };
+	BxScale.setClickingTogglesState(true);
+	addAndMakeVisible(BxScale);
 }
 
 puannhiAudioProcessorEditor::~puannhiAudioProcessorEditor()
@@ -84,6 +95,8 @@ puannhiAudioProcessorEditor::~puannhiAudioProcessorEditor()
 	LpeakVal.setLookAndFeel(nullptr);
 	LfftSize.setLookAndFeel(nullptr);
 	LfftSizeVal.setLookAndFeel(nullptr);
+	BxScale.setLookAndFeel(nullptr);
+	LxScale.setLookAndFeel(nullptr);
 }
 
 //==============================================================================
@@ -96,23 +109,27 @@ void puannhiAudioProcessorEditor::paint (juce::Graphics& g)
 void puannhiAudioProcessorEditor::resized()
 {
 	auto area = getLocalBounds();
-	area.removeFromTop(40);
+	area.removeFromTop(70);
 
 	area.reduce(40, 30);
 	SpectrogramArea = area;
 
 	auto row1 = 10;
 	auto row2 = 40;
+	auto row3 = 70;
 
 	LwinFunc.setBounds(40, row1, 120, 25);
 	CwinFunc.setBounds(160, row1, 250, 25);
-	Lratio.setBounds(40, row2, 120, 25);
-	Sratio.setBounds(160, row2, 250, 25);
-
 	Lpeak.setBounds(420, row1, 100, 25);
 	LpeakVal.setBounds(520, row1, 80, 25);
+
+	Lratio.setBounds(40, row2, 120, 25);
+	Sratio.setBounds(160, row2, 250, 25);
 	LfftSize.setBounds(420, row2, 100, 25);
 	LfftSizeVal.setBounds(520, row2, 80, 25);
+
+	LxScale.setBounds(40, row3, 120, 25);
+	BxScale.setBounds(155, row3, 25, 25);
 
 	width_f = SpectrogramArea.getWidth();
 	height_f = SpectrogramArea.getHeight();
@@ -140,6 +157,15 @@ void puannhiAudioProcessorEditor::timerCallback()
 
 void puannhiAudioProcessorEditor::drawNextFrameOfSpectrum()
 {	
+	if (isLog)
+	{
+		skew = 0.3f;
+	}
+	else
+	{
+		skew = 1.0f;
+	}
+
 	for (int i = 0; i < audioProcessor.N; i++)
 	{
 		// to compensate the data outside nyquist
@@ -223,7 +249,12 @@ void puannhiAudioProcessorEditor::drawFrame(juce::Graphics& g)
 void puannhiAudioProcessorEditor::drawCoordiante(juce::Graphics & g)
 {
 	// should be driven by gui event?
+	drawAmplitude(g);
+	drawFrequency(g);
+}
 
+void puannhiAudioProcessorEditor::drawAmplitude(juce::Graphics& g)
+{
 	// amplitude tick
 	g.setColour(juce::Colours::antiquewhite);
 	for (int i = 0; i < 11; i++)
@@ -234,15 +265,25 @@ void puannhiAudioProcessorEditor::drawCoordiante(juce::Graphics & g)
 		g.setFont(g.getCurrentFont().withHeight(10.0f));
 		g.drawText(juce::String(level) + juce::String("dB"), offset_x - 40, int(y_pos) - 12, 35, 25, juce::Justification::right, false);
 	}
+}
 
+void puannhiAudioProcessorEditor::drawFrequency(juce::Graphics& g)
+{
+	// frequency tick
+	g.setColour(juce::Colours::antiquewhite);
 	// draw 1st vertical tick
 	g.drawVerticalLine(offset_x, offset_y, offset_y + height_f);
 	// draw last vertical tick
 	g.drawVerticalLine(offset_x + width_f, offset_y, offset_y + height_f);
-	
-	// frequency tick
+
+	int k_iter = 1 + audioProcessor.getSampleRate() / 2000;
+	if (isLog)
+	{
+		k_iter = 21;
+	}
+
 	// k-interval
-	for (int i = 1; i < 21; i++)
+	for (int i = 1; i < k_iter; i++)
 	{
 		auto frequency = i * 1000.0f;
 		float x_pos = offset_x + inverse_x(frequency) * width_f;
@@ -276,8 +317,8 @@ void puannhiAudioProcessorEditor::drawCoordiante(juce::Graphics & g)
 		// draw line
 		// g.drawVerticalLine(x_pos, offset_y, offset_y + height_f);
 	}
-
 }
+
 
 
 void puannhiAudioProcessorEditor::unit_test(juce::Graphics& g)
