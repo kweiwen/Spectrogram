@@ -106,7 +106,8 @@ private:
 	int height_i;
 	float offset_x;
 	float offset_y;
-	float gridSize;
+	float lineGridSize;
+	float barGridSize;
 
 	std::unique_ptr<UI_LookAndFeel> lnf;
 

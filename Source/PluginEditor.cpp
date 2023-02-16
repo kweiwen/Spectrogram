@@ -23,7 +23,7 @@ puannhiAudioProcessorEditor::puannhiAudioProcessorEditor (puannhiAudioProcessor&
 	maxdB = 0.0f;
 	max = -100.0f;
 	ratio = 20;
-	skew = 0.367;
+	skew = 0.3f;
 
 	// init look and feel
 	lnf.reset(new UI_LookAndFeel);
@@ -122,7 +122,8 @@ void puannhiAudioProcessorEditor::resized()
 	offset_x = SpectrogramArea.getX();
 	offset_y = SpectrogramArea.getY();
 
-	gridSize = width_f / (float)audioProcessor.lineScopeSize;
+	lineGridSize = width_f / (float)audioProcessor.lineScopeSize;
+	barGridSize = width_f / (float)audioProcessor.barScopeSize;
 }
 
 
@@ -148,6 +149,7 @@ void puannhiAudioProcessorEditor::drawNextFrameOfSpectrum()
 	}
 
 	// convert data disribution from linear into logarithm
+	// for line graph
 	for (int i = 0; i < audioProcessor.lineScopeSize; i++)
 	{
 		auto skewedProportionX = 1.0f - std::exp(std::log(1.0f - (float)i / (float)audioProcessor.lineScopeSize) * skew);
@@ -166,6 +168,23 @@ void puannhiAudioProcessorEditor::drawNextFrameOfSpectrum()
 		{
 			max = level_limited;
 		}
+	}
+
+	// convert data disribution from linear into logarithm
+	// for bar graph
+	for (int i = 0; i < audioProcessor.barScopeSize; i++)
+	{
+		auto skewedProportionX = 1.0f - std::exp(std::log(1.0f - (float)i / (float)audioProcessor.barScopeSize) * skew);
+		auto fftDataIndex = juce::jlimit(0, audioProcessor.N / 2, (int)(skewedProportionX * (float)audioProcessor.N * 0.5f));
+
+		auto Ve = juce::Decibels::gainToDecibels(audioProcessor.previousOutputArray[fftDataIndex]);
+		auto V0 = juce::Decibels::gainToDecibels((float)audioProcessor.N);
+
+		auto level_limited = juce::jlimit(mindB, maxdB, Ve - V0);
+
+		auto level = juce::jmap(level_limited, mindB, maxdB, 0.0f, 1.0f);
+
+		audioProcessor.barScopeData[i] = level;
 	}
 }
 
@@ -187,12 +206,12 @@ void puannhiAudioProcessorEditor::drawFrame(juce::Graphics& g)
 	}
 
 	// bar graph
-	for (int i = 0; i < audioProcessor.lineScopeSize; i++)
+	for (int i = 0; i < audioProcessor.barScopeSize; i++)
 	{
 		g.setColour(juce::Colours::greenyellow);
-		auto val = juce::jmap(audioProcessor.lineScopeData[i], 0.0f, 1.0f, 0.0f, height_f);
-		auto rect = juce::Rectangle<float>(offset_x + i * gridSize, offset_y + (height_f - val), gridSize, height_f - (height_f - val));
-		rect.reduce(1, 0);
+		auto val = juce::jmap(audioProcessor.barScopeData[i], 0.0f, 1.0f, 0.0f, height_f);
+		auto rect = juce::Rectangle<float>(offset_x + i * barGridSize, offset_y + (height_f - val), barGridSize, height_f - (height_f - val));
+		rect.reduce(2, 0);
 		g.fillRect(rect);
 	}
 
@@ -240,7 +259,7 @@ void puannhiAudioProcessorEditor::drawCoordiante(juce::Graphics & g)
 		}
 	}
 
-	auto color = juce::Colours::antiquewhite.withAlpha(0.5f);
+	auto color = juce::Colours::antiquewhite.withAlpha(0.7f);
 	g.setColour(color);
 	// hundred-interval
 	for (int i = 1; i < 10; i++)
@@ -248,10 +267,12 @@ void puannhiAudioProcessorEditor::drawCoordiante(juce::Graphics & g)
 		auto frequency = i * 100.0f;
 		float x_pos = offset_x + inverse_x(frequency) * width_f;
 
+		// draw dashed line
 		auto line = juce::Line<float>(x_pos, offset_y, x_pos, offset_y + height_f);
-		float arr[] = { 4.0f, 6.0f };
+		float arr[] = { 3.0f, 6.0f };
 		g.drawDashedLine(line, arr, 2);
-		//g.drawVerticalLine(x_pos, offset_y, offset_y + height_f);
+		// draw line
+		// g.drawVerticalLine(x_pos, offset_y, offset_y + height_f);
 	}
 
 }
@@ -270,12 +291,12 @@ void puannhiAudioProcessorEditor::unit_test(juce::Graphics& g)
 	g.setColour(juce::Colours::grey);
 	g.fillRect(offset_x, offset_y, width_f, height_f);
 
-	auto gridSize = width / (float)audioProcessor.lineScopeSize;
+	auto lineGridSize = width / (float)audioProcessor.lineScopeSize;
 	for (int i = 0; i < audioProcessor.lineScopeSize; i++)
 	{
 		auto val = juce::jmap(i / (float)audioProcessor.lineScopeSize, 0.0f, 1.0f, 0.0f, height_f);
 		g.setColour(juce::Colours::greenyellow);
-		g.fillRect(offset_x + i * gridSize, offset_y + (height_f - val), gridSize, height_f - (height_f - val));
+		g.fillRect(offset_x + i * lineGridSize, offset_y + (height_f - val), lineGridSize, height_f - (height_f - val));
 	}
 }
 
