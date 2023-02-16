@@ -15,7 +15,8 @@ puannhiAudioProcessorEditor::puannhiAudioProcessorEditor (puannhiAudioProcessor&
 {
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (640, 480);
+
+    setSize (800, 450);
 	startTimerHz(25);
 
 	// specific private member for analysis
